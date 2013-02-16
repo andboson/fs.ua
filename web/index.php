@@ -4,16 +4,17 @@ error_reporting(0);
 $ini = parse_ini_file("config.ini");
 
 $opts = array(
-  'http'=>array(
-    'method'=>"POST",
-    'header'=>"Content-type: application/x-www-form-urlencoded\r\n User-Agent : Opera/9.80 (X11; Linux i686; U; ru) Presto/2.7.62 Version/11.00 \r\n".
-    "Accept-Language: ru-RU,ru;q=0.9,en;q=0.8 \r\n".
-        "Accept-Charset:utf-8, utf-16, *;q=0.1 \r\n".
-        "Accept-Encoding:identity, *;q=0"
-  )
+    'http'=>array(
+        'method'=>"POST",
+        'header'=>"Content-type: application/x-www-form-urlencoded\r\n User-Agent : Opera/9.80 (X11; Linux i686; U; ru) Presto/2.7.62 Version/11.00 \r\n".
+            "Accept-Language: ru-RU,ru;q=0.9,en;q=0.8 \r\n".
+            "Accept-Charset:utf-8, utf-16, *;q=0.1 \r\n".
+            "Accept-Encoding:identity, *;q=0"
+    )
 );
 
-$context = stream_context_create($opts);
+$context  = stream_context_create($opts);
+
 require 'nogo.php';
 $fitem=$_GET['fitem'];
 $rfolderitem=$_GET['folder'];
@@ -27,6 +28,7 @@ $del=$_GET['delete'];
 $mode=$_GET['mode'];
 $selectSeason = $_GET['selectseason'];
 $selectLangFolder = $_GET['selectlangfolder'];
+$f_page = $_GET['f_page'];
 
 $focus=explode("/",$category);
 $focus= ($focus[2]) ? $focus[2]: "albums";
@@ -40,7 +42,7 @@ if($mode=="downloads") $focus="dls";
    <?php if($mode=="downloads") { ?><META HTTP-EQUIV="REFRESH" CONTENT="40"><?php } ?>
   <title>FS.UA for NMT</title>
   <style type="text/css">
-  body {padding:0px;margin:0px;color:<?php echo $ini['text'];?>;background-repeat:no-repeat}
+  body {background-color: black; padding:0px;margin:0px;color:<?php echo $ini['text'];?>;background-repeat:no-repeat}
   a {font-size:26px;text-decoration:none;color:<?php echo $ini['acolor'];?>;}
   a:hover {text-decoration:underline}
   .hiden{visibility:hidden;top:175px}
@@ -114,7 +116,16 @@ function dele(){
  if($ini['simple_search'] != 1 ) include('keys.php');
 ?>
 </center>
+
 <div style="padding:35px 60px;">
+  <? if(isset($ini['login'])) { ?>
+    <h5><img src="img/favor.png" style="vertical-align:middle">
+        <a href="?mode=favor">Избранное</a>&nbsp;
+        <a href="?mode=favor&f_page=inprocess">В процессе</a>&nbsp;
+        <a href="?mode=favor&f_page=recommended">Рекомендуемое</a>&nbsp;
+        <a href="?mode=favor&f_page=forlater">На будущее</a>
+    </h5>
+   <? } ?>
    <div class="b-subcategories">
       <h2><img src="img/vbg.png" style="vertical-align:middle">
         <a href="?cat=/video/films/?sort=new" name="films">Фильмы</a>&nbsp;
@@ -133,6 +144,74 @@ function dele(){
   </div>
 </div>
 <?php
+
+if ($mode == 'favor'){
+
+    $postdata = http_build_query(
+        array(
+            'login' => $ini['login'],
+            'passwd' => $ini['password']
+        )
+    );
+
+    $opts = array(
+        'http'=>array(
+            'method'=>"POST",
+            'header'=>"Content-type: application/x-www-form-urlencoded\r\n User-Agent : Opera/9.80 (X11; Linux i686; U; ru) Presto/2.7.62 Version/11.00 \r\n".
+                "Accept-Language: ru-RU,ru;q=0.9,en;q=0.8 \r\n".
+                "Accept-Charset:utf-8, utf-16, *;q=0.1 \r\n".
+                "Accept-Encoding:identity, *;q=0",
+            'content' => $postdata
+        )
+    );
+
+    $context  = stream_context_create($opts);
+    $result = file_get_contents('http://fs.ua/login.aspx', false, $context);
+    $coo = Array();
+    foreach( $http_response_header as $head){
+        if(stristr($head, 'Set-Cookie:' )) $coo[] = (str_ireplace('Set-Cookie:', '', $head ));
+    }
+    $coo = implode('; ',$coo);
+
+    $opts = array(
+        'http'=>array(
+            'method'=>"POST",
+            'header'=>"Content-type: application/x-www-form-urlencoded\r\n User-Agent : Opera/9.80 (X11; Linux i686; U; ru) Presto/2.7.62 Version/11.00 \r\n".
+                "Accept-Language: ru-RU,ru;q=0.9,en;q=0.8 \r\n".
+                "Accept-Charset:utf-8, utf-16, *;q=0.1 \r\n".
+                "Accept-Encoding:identity, *;q=0 \r\n".
+                "Cookie: ".$coo,
+            'content' => $postdata
+        )
+    );
+
+    $context  = stream_context_create($opts);
+    $result = file_get_contents('http://fs.ua/myfavourites.aspx?page='.$f_page, false, $context);
+/// разделы
+    $arr = Array();
+    preg_match_all('/b-category(.+?)m-in-load/ism',$result,$arr);
+
+//содержимое
+    $arrR = Array();
+    foreach( $arr[0] as $razdel ){
+        $arrHead = Array();
+        preg_match_all('/m-themed(.+?)item\s(.+?)"(.+?)<b>(.+?)<\/b/ism',$razdel,$arrHead);
+        echo "<h2>".$arrHead[4][0]."</h2>";
+        $is_serial = stristr($arrHead[2][0], "seri") || stristr($arrHead[2][0], "tvshows") ? true :false;
+        preg_match_all('/item\/(.+?)"(.+?)b-poster-thin(.+?)<span>(.+?)<p/ism',$razdel,$arrR);
+        echo "<ol>";
+            foreach( $arrR[1] as $key => $id){
+                $name = $arrR[4][$key];
+                $serial_mode = $is_serial ? '&cat0=/ser' : '';
+                echo "<li>";
+                echo "<a href='?fitem=/item/".$id.$serial_mode."'>".$name."</a>";
+                echo "</li>";
+            }
+
+         echo "</ol>";
+    }
+  exit();
+}
 
 if($del) {  /// удалить файл
 	unlink($del);
@@ -176,6 +255,9 @@ if($dl){  // качаем урл
 }
 
 
+$r = mt_rand(0, 10000000000);
+$r = $r / 10000000000;
+
 if (isset($sbox)){      // вывод результата поиска
     search($sbox);
     exit();
@@ -193,14 +275,14 @@ if (isset($folderitem)) {    //  содержимое корневой папк�
     }
 
 if (isset($fitem)){
-    echo ">>>".$fitem;
+    //echo ">>>".$fitem;
 	if (stristr ($category0,"ser") || stristr ($category0,"show")){
 		getserial($fitem); // папка сезонов сериала
 		exit();
 	}
 
-    echo "<br>]]]".$id = substr($fitem,stripos($fitem,'/',1) + 1);
-    getSeasonFolder($fitem, '0.29244977934286', $id , '0');
+   $id = substr($fitem,stripos($fitem,'/',1) + 1);
+    getSeasonFolder($fitem, $r, $id , '0');
     //getfolder($fitem);     /// содержимое папки
     exit();
   }
@@ -247,16 +329,15 @@ function pages($pager){
 
 /// папка сезонов сериала
 function getserial($id){
-    echo "<br>".$id = substr($id,stripos($id,'/',1) + 1);
-	global $opts;
+   $id = substr($id,stripos($id,'/',1) + 1);
+	global $opts, $r;
 	$context = stream_context_create($opts);
     $folder = 0;
-    $req = $id.'?ajax&r=0.6839934242889285&id='.$id.'&folder='.$folder;
+    $req = $id.'?ajax&r='.$r.'&id='.$id.'&folder='.$folder;
 	$url='http://fs.ua/item/'.$req;
-     $html = file_get_contents($url, false, $context);
-$arr = Array();
+    $html = file_get_contents($url, false, $context);
+    $arr = Array();
     preg_match_all('/fl(\d+)(.+?)\<b\>(.+?)\<\/b\>/ism',$html,$arr);
-  //  $saw = new nokogiri($html);
 echo "<ol>";
     foreach( $arr[1] as $key => $value){
       $name = $arr[3][$key];
@@ -273,7 +354,7 @@ echo "<ol>";
 function getSeasonFolder($item, $r, $id, $folder){
     global $context;
     $req = $id.'?ajax&r='.$r.'&id='.$id.'&folder='.$folder;
-   echo $url='http://fs.ua/item/'.$req;
+    $url='http://fs.ua/item/'.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
     preg_match_all('/ name="fl(\d+)".+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
@@ -310,97 +391,6 @@ function getLangFolder($id, $folder){
     echo '</ol>';
 }
 
-
-/////////////////old
-
-/////////////////////////
-///////  get end folder content
-
-function getitem($folderitem){  ///get files in foler
-    	require_once 'nogo.php';
-
-    	print_r($_GET);
-	global $opts,$ini;
-	$context = stream_context_create($opts);
-	$url='http://fs.ua'.$folderitem;
-	$html = file_get_contents($url);//, false, $context);
-	$saw = new nokogiri($html);
-	$u=$saw->get('a.link-material')->toArray();
-	echo '<ol>';
-	for ($i=0;$i<count($u);$i++){
-		$files=$u[$i];
-		$href = $u[$i]['href'];
-		$text = $u[$i]['span']['#text'];
-		if($u['href']) {
-		$href=$u['href'];
-		$text=$u['span']['#text'];
-		$i=count($u);
-		}
-
-        $del=$ini['save_dir'].strrchr($href,"/");
-		$downornot = (file_exists($ini['save_dir'].strrchr($href,"/"))) ? '<a href="?delete='.$del.'&folder='.$folderitem.'">[удалить]</a>&nbsp;<a vod href="'.$href.'">[играть]</a>' : '<a href="?dl='.$href.'">[скачать]</a>';
-		echo '<li><a vod href="'.$href.'">'.$text.'</a>&nbsp;&nbsp;&nbsp;'.$downornot.'</li>';
-	}
-	echo '</ol>';
-}
-
-
-
-
-
-function getfolder($id){
-    print_r($_GET);
-    echo $id;
-    require_once 'nogo.php';
-    global $opts;
-    $context = stream_context_create($opts);
-    $url='http://fs.ua'.$id.'?folder=0#fl0';
-    //echo "<br>".$url;
-/////////echo $url;
-    $html = file_get_contents($url);//, false, $context);
-    //echo $html;
-    $saw = new nokogiri($html);
-    $u=$saw->get('li.folder')->toArray();
-    $u=$saw->get('a.title')->toArray();
-
-//	echo "<pre>";print_r($u);
-    echo '<ol>';
-    for ($i=0;$i<count($u);$i++){
-        $folderarray=$u[$i]['div'][0]['a'][0];
-        if ($u['class']=='folder') { $folderarray=$u['div'][1]['a'][0]; $i=99; }
-
-        if(  isset($_GET['serialfolder'])){
-            $folderarray=$u[$i];
-            if ( stristr($folderarray['class'], 'simple') ) continue;
-        }  else { }
-        $lang=substr($folderarray['class'],strpos($folderarray['class'],'m-')+2,2);    //file folder
-        if(!$lang) $lang = "orig";
-        $href = ($folderarray["#text"]) ? $folderarray["href"] : $u[$i]['div'][0]['a'][0]['href'];
-        $text = ($folderarray["#text"]) ? $folderarray["#text"] : 'Дополнительные материалы';
-        if (!$folderarray["#text"] && strstr($id,"ser")) continue;
-        if (!$folderarray["#text"] && strstr($id,"vid")) continue;
-        if(strstr($id,"ser") && strstr($id,"?")) $id=substr($id,0,strpos($id,"?"));
-        if(strstr($id,"show") && strstr($id,"?")) $id=substr($id,0,strpos($id,"?"));
-        if (strstr($id,"cli") || strstr($id,"conc")) $lang="orig";
-        $plisttype='vod="playlist"';
-        if(strstr($id,"aud")){
-            $plisttype='pod="2,1,http://andboson.net/ex/panda.php?'.time().'"';
-            $folderarray=$u[$i]['div'][0]['a'][0];
-            $href =($folderarray["href"]) ? $folderarray["href"] : $u['div'][0]['a'][0]["href"];
-            $text =($folderarray["href"]) ? $folderarray['b'][0]["#text"] : $u['div'][0]['a'][0]['b'][0]["#text"];
-        }
-        $plistlink= $id.substr($href,0,strpos($href,"#"))."&flist";
-        $size=$u[$i]["span"][1]["#text"];
-        $files=$u[$i]["span"][2]["#text"];
-        $qual=stristr($u[$i]["span"][0]["#text"],"(");
-
-        if( stristr($id, '?')) $id = substr($id,0, stripos($id,'?'));
-        echo '<li><a href="?folder='.$id.$href.'">'.$text.'&nbsp;('.$lang.')</a>&nbsp;
-	'.$qual."&nbsp;".$size.'&nbsp;'.$files.'&nbsp;&nbsp;
-	<a '.$plisttype.' href="playlist.php?list='.$plistlink.'">Играть все</a></li>';
-    }
-    echo '</ol>';
-}
 
 ///////////  search
 /////////////////////////////////////////
@@ -488,3 +478,4 @@ function downloadlist(){
 ?>
 </body>
 </html>
+
