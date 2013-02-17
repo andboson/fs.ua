@@ -118,14 +118,14 @@ function dele(){
 </center>
 
 <div style="padding:35px 60px;">
-  <? if(isset($ini['login'])) { ?>
+  <?php if(isset($ini['login'])) { ?>
     <h5><img src="img/favor.png" style="vertical-align:middle">
         <a href="?mode=favor">Избранное</a>&nbsp;
         <a href="?mode=favor&f_page=inprocess">В процессе</a>&nbsp;
         <a href="?mode=favor&f_page=recommended">Рекомендуемое</a>&nbsp;
         <a href="?mode=favor&f_page=forlater">На будущее</a>
     </h5>
-   <? } ?>
+   <?php } ?>
    <div class="b-subcategories">
       <h2><img src="img/vbg.png" style="vertical-align:middle">
         <a href="?cat=/video/films/?sort=new" name="films">Фильмы</a>&nbsp;
