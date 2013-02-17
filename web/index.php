@@ -45,6 +45,7 @@ if($mode=="downloads") $focus="dls";
   body {background-color: black; padding:0px;margin:0px;color:<?php echo $ini['text'];?>;background-repeat:no-repeat}
   a {font-size:26px;text-decoration:none;color:<?php echo $ini['acolor'];?>;}
   a:hover {text-decoration:underline}
+  a.file{ font-family: Arial}
   .hiden{visibility:hidden;top:175px}
   .show2{top:0px;left:0px;height:90px;width:450px;}
   .3key {width:28px;height:24px;text-align:center;color:#fff}
@@ -358,8 +359,8 @@ function getSeasonFolder($item, $r, $id, $folder){
     $url='http://fs.ua/item/'.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
-    preg_match_all('/ name="fl(\d+)".+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
-
+    preg_match_all('/ name="fl(\d+)".+?link-subtype(.+?)title.+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
+//echo "<pre>";print_r($arr);
     $plisttype='vod="playlist"';
     if(strstr($category0,"aud") || strstr($category0,"sound") || strstr($category0,"album")){
         $plisttype='pod="2,1,http://andboson.net/ex/panda.php?'.time().'"';
@@ -369,8 +370,9 @@ function getSeasonFolder($item, $r, $id, $folder){
         $name = $arr[3][$key];
         $plistlink= "http://fs.ua/flist/".$id."?folder=".$value;
         echo "<li>";
-        echo "<a href='?selectlangfolder=".$id."&folder=".$value."'>".$arr[2][$key];
-        echo " ".$arr[3][$key]." ".$arr[4][$key]."</a>";
+        echo "<a class='file' href='?selectlangfolder=".$id."&folder=".$value."'>";
+        echo "<img style='vertical-align:middle;matgin-top:-10px;' src='img/".substr(trim($arr[2][$key]),2).".png'>";
+        echo " ".$arr[3][$key]." ".$arr[4][$key]." ".$arr[5][$key]."</a>";
         echo '&nbsp;&nbsp;<a '.$plisttype.' href="playlist.php?list='.$plistlink.'"><small>[играть все]</small></a>';
         echo "</li>";
     }
