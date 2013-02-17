@@ -361,7 +361,7 @@ function getSeasonFolder($item, $r, $id, $folder){
     preg_match_all('/ name="fl(\d+)".+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
 
     $plisttype='vod="playlist"';
-    if(strstr($category0,"aud") || strstr($category0,"sound")){
+    if(strstr($category0,"aud") || strstr($category0,"sound") || strstr($category0,"album")){
         $plisttype='pod="2,1,http://andboson.net/ex/panda.php?'.time().'"';
     }
     echo "<ol>";
