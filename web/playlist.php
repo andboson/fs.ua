@@ -1,7 +1,7 @@
 <?php
  ini_set('max_execution_time', '0');
 error_reporting(E_ALL);
-$id=$_GET['list'];
+$link=$_GET['list'];
 
 $opts = array(
   'http'=>array(
@@ -14,9 +14,9 @@ $opts = array(
 );
 
 	$context = stream_context_create($opts);
-	$url='http://fs.ua'.$id.'&flist';
+	$url = $link; //'http://fs.ua'.$id.'&flist';
 	//$html = file_get_contents($url);//, false, $context);
-      $html=file($url, false, $context);
+      $html = file($url, false, $context);
 	//print_r($html);
 
 		header("Content-Type: x-foo/x-bar");

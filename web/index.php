@@ -144,7 +144,7 @@ function dele(){
   </div>
 </div>
 <?php
-
+/////// избранное
 if ($mode == 'favor'){
 
     $postdata = http_build_query(
@@ -187,22 +187,23 @@ if ($mode == 'favor'){
 
     $context  = stream_context_create($opts);
     $result = file_get_contents('http://fs.ua/myfavourites.aspx?page='.$f_page, false, $context);
-/// разделы
+    /// разделы
     $arr = Array();
     preg_match_all('/b-category(.+?)m-in-load/ism',$result,$arr);
 
-//содержимое
+    //содержимое
     $arrR = Array();
     foreach( $arr[0] as $razdel ){
         $arrHead = Array();
         preg_match_all('/m-themed(.+?)item\s(.+?)"(.+?)<b>(.+?)<\/b/ism',$razdel,$arrHead);
+        $category_id = $arrHead[2][0];
         echo "<h2>".$arrHead[4][0]."</h2>";
-        $is_serial = stristr($arrHead[2][0], "seri") || stristr($arrHead[2][0], "tvshows") ? true :false;
+        $is_serial = stristr($category_id, "seri") || stristr($category_id, "tvshows") ? true :false;
         preg_match_all('/item\/(.+?)"(.+?)b-poster-thin(.+?)<span>(.+?)<p/ism',$razdel,$arrR);
         echo "<ol>";
             foreach( $arrR[1] as $key => $id){
                 $name = $arrR[4][$key];
-                $serial_mode = $is_serial ? '&cat0=/ser' : '';
+                $serial_mode = '&cat0='.$category_id;
                 echo "<li>";
                 echo "<a href='?fitem=/item/".$id.$serial_mode."'>".$name."</a>";
                 echo "</li>";
@@ -330,7 +331,7 @@ function pages($pager){
 /// папка сезонов сериала
 function getserial($id){
    $id = substr($id,stripos($id,'/',1) + 1);
-	global $opts, $r;
+	global $opts, $r, $category0;
 	$context = stream_context_create($opts);
     $folder = 0;
     $req = $id.'?ajax&r='.$r.'&id='.$id.'&folder='.$folder;
@@ -342,7 +343,7 @@ echo "<ol>";
     foreach( $arr[1] as $key => $value){
       $name = $arr[3][$key];
     echo "<li>";
-        echo "<a href='?selectseason=".$req.$value."'>".$name."</a>";
+        echo "<a href='?selectseason=".$req.$value.'&cat0='.$category0."'>".$name."</a>";
      echo "</li>";
     }
 
@@ -352,24 +353,28 @@ echo "<ol>";
 
 ///// содержимое папки сезона
 function getSeasonFolder($item, $r, $id, $folder){
-    global $context;
+    global $context, $category0;
     $req = $id.'?ajax&r='.$r.'&id='.$id.'&folder='.$folder;
     $url='http://fs.ua/item/'.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
     preg_match_all('/ name="fl(\d+)".+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
 
+    $plisttype='vod="playlist"';
+    if(strstr($category0,"aud") || strstr($category0,"sound")){
+        $plisttype='pod="2,1,http://andboson.net/ex/panda.php?'.time().'"';
+    }
     echo "<ol>";
     foreach( $arr[1] as $key => $value){
         $name = $arr[3][$key];
+        $plistlink= "http://fs.ua/flist/".$id."?folder=".$value;
         echo "<li>";
         echo "<a href='?selectlangfolder=".$id."&folder=".$value."'>".$arr[2][$key];
         echo " ".$arr[3][$key]." ".$arr[4][$key]."</a>";
+        echo '&nbsp;&nbsp;<a '.$plisttype.' href="playlist.php?list='.$plistlink.'"><small>[играть все]</small></a>';
         echo "</li>";
     }
-
     echo "</ol>";
-
 }
 
 ///содержимое языковой папки
