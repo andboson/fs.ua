@@ -69,8 +69,9 @@ document.cookie=c_name + "=" + c_value;
 }
 
 
-     function foo(){
+  function foo(){
  	var oSheet = document.styleSheets[0];
+      console.log(oSheet);
  	var oRule = oSheet.rules ? oSheet.rules[4] : oSheet.cssRules[4];
  			//oRule.style.visibility="hidden";
  			if (oRule.style.visibility=="hidden") { oRule.style.visibility="visible"; } else { oRule.style.visibility="hidden";}
@@ -99,23 +100,9 @@ function dele(){
 <!--<br><br><a href="TV.php">TV.test</a><br>
 <a href="http://tv.x-lan.net.ua:8015/1plus1" vod>TV.tes22t</a>      -->
 <center>
-<form method="get" action="index.php">
-<?php if($ini['simple_search'] != 1 ) { ?>
-<table width="400px;" cellspacing="0" cellpadding="0" border="0"><tr>
-<td width="277px" background="img/25search.jpg" style="background-repeat:no-repeat;">
-<p id="stitle" >&nbsp;</p></td><td align="left"><input type="image" src="img/21btn.jpg"></td>
-</tr></table>
-<input type="hidden" name="sbox" id="sbox" size="15">
-<?php } else { ?>
-   <div id="keyb">
-      <input type="text" name="sbox" size="15" />
-    </div>
-     <div id="sdiv"><input type="submit" value="Поиск"></div>
-<?php } ?>
-</form>
- <?php
- if($ini['simple_search'] != 1 ) include('keys.php');
-?>
+
+     <div id="sdiv"><a href="search.php"><img src="img/21btn.jpg"></a></div>
+
 </center>
 
 <div style="padding:35px 60px;">
@@ -266,16 +253,6 @@ if (isset($sbox)){      // вывод результата поиска
   }
 
 
-if (isset($serial)){  // папка сезона сериала
-    getfolder($serial);
-    exit();
-  }
-
-if (isset($folderitem)) {    //  содержимое корневой папки
-	getitem($folderitem);
-    exit();
-    }
-
 if (isset($fitem)){
     //echo ">>>".$fitem;
 	if (stristr ($category0,"ser") || stristr ($category0,"show")){
@@ -285,7 +262,6 @@ if (isset($fitem)){
 
    $id = substr($fitem,stripos($fitem,'/',1) + 1);
     getSeasonFolder($fitem, $r, $id , '0');
-    //getfolder($fitem);     /// содержимое папки
     exit();
   }
 
@@ -340,15 +316,20 @@ function getserial($id){
     $html = file_get_contents($url, false, $context);
     $arr = Array();
     preg_match_all('/fl(\d+)(.+?)\<b\>(.+?)\<\/b\>/ism',$html,$arr);
-echo "<ol>";
+    $resinfo = getposter($id);
+    echo "<br><center><h1>".$resinfo['name']."</h1></center>";
+    echo "<table cellpadding='10'><tr><td>";
+    echo $resinfo['img'];
+    echo "</td><td valign='top'>";
+    echo "<ol>";
     foreach( $arr[1] as $key => $value){
-      $name = $arr[3][$key];
-    echo "<li>";
+        $name = $arr[3][$key];
+        echo "<li>";
         echo "<a href='?selectseason=".$req.$value.'&cat0='.$category0."'>".$name."</a>";
-     echo "</li>";
+        echo "</li>";
     }
-
- echo "</ol>";
+    echo "</ol>";
+   echo "</td></tr></table>";
 }
 
 
@@ -360,11 +341,16 @@ function getSeasonFolder($item, $r, $id, $folder){
     $html = file_get_contents($url, false, $context);
     $arr = Array();
     preg_match_all('/ name="fl(\d+)".+?link-subtype(.+?)title.+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
-//echo "<pre>";print_r($arr);
     $plisttype='vod="playlist"';
     if(strstr($category0,"aud") || strstr($category0,"sound") || strstr($category0,"album")){
         $plisttype='pod="2,1,http://andboson.net/ex/panda.php?'.time().'"';
     }
+    $resinfo = getposter($id);
+    echo "<br><center><h1>".$resinfo['name']."</h1></center>";
+    echo "<table cellpadding='10'><tr><td>";
+    echo $resinfo['img'];
+    echo "</td><td valign='top'>";
+
     echo "<ol>";
     foreach( $arr[1] as $key => $value){
         $name = $arr[3][$key];
@@ -377,6 +363,7 @@ function getSeasonFolder($item, $r, $id, $folder){
         echo "</li>";
     }
     echo "</ol>";
+    echo "</td></tr></table>";
 }
 
 ///содержимое языковой папки
@@ -386,7 +373,11 @@ function getLangFolder($id, $folder){
     $url='http://fs.ua/flist/'.$req;
     $html = file_get_contents($url, false, $context);
     $files = explode("\r\n", $html);
-    //echo $html;
+    $resinfo = getposter($id);
+    echo "<br><center><h1>".$resinfo['name']."</h1></center>";
+    echo "<table cellpadding='10'><tr><td>";
+    echo $resinfo['img'];
+    echo "</td><td valign='top'>";
     echo '<ol>';
     foreach($files as $onefile){
         if( strlen($onefile) < 20 ) continue;
@@ -396,6 +387,19 @@ function getLangFolder($id, $folder){
         echo '<li><a vod href="'.$onefile.'">'.$filename.'</a>&nbsp;&nbsp;&nbsp;'.$downornot.'</li>';
     }
     echo '</ol>';
+    echo "</td></tr></table>";
+}
+
+
+///poster
+function getposter($id){
+    global $context;
+  $req = $id;
+    $url='http://fs.ua/item/'.$req;
+    $html = file_get_contents($url, false, $context);
+    $arr = Array();
+    preg_match_all('/<h1>.+?<\/b>(.+?)<\/h1>.+?images-show.+?>(.+?cover.+?)<\/a/ism',$html,$arr);
+return Array('name' => $arr[1][0], 'img' => $arr[2][0]);
 }
 
 
@@ -406,8 +410,8 @@ function search($id){
 	global $opts;
 	$context = stream_context_create($opts);
 	$path="none";
-if (is_numeric($id)){  /////search by material id
-	$types=Array('/video/films/i'); //,'/video/serials/i','/video/cartoonserials/i','/video/tvshow/i','/video/clips/i','/audio/albums/i',
+
+	$types=Array('/video/');//,'/video/serials/i','/video/cartoonserials/i','/video/tvshow/i','/video/clips/i','/audio/albums/i',
 //	'/audio/collections/i','/audio/soundtracks/i','/video/concerts/i');
 	  foreach($types as $type){
 	    $get="";
@@ -419,21 +423,7 @@ if (is_numeric($id)){  /////search by material id
 		$path = $path."/i";
 	  }
 
-  // echo $path.$id;
-    if (stristr ($path,"ser") || stristr ($path,"show")){
-		getserial($path.$id);
-		exit();
-	}
-
-	if ($path!="none") {
-		echo "<br><center><h3><i>Вы искали:&nbsp;".$id."</i></h3></center>";
-		getfolder($path.$id);
-		} else {
-		   echo "<center><h3><i>".$id."</i></h3></center>";
-			echo "<center><h3>Ничего не нашлось</h3></center>";
-		}
-} else {  ////// search by text
-      echo "<br><center><h3><i >Вы искали:&nbsp;".$id."</i></h3></center>";
+     echo "<br><center><h3><i >Вы искали:&nbsp;".$id."</i></h3></center>";
       	$url='http://fs.ua/search.aspx?search='.$id;
       	//echo $url;
       	$html = file_get_contents($url);//, false, $context);
@@ -445,7 +435,7 @@ if (is_numeric($id)){  /////search by material id
 	      echo  '<tr><td ><i>'.$type[$i]["#text"].'</i><hr></td><td><a  href="?fitem='.$u[$i]["href"].'">'.$u[$i]["#text"].'</a><hr></td></tr>';
         }
         echo "</table></center>";
-	}
+
 
 }
 
