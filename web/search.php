@@ -111,12 +111,16 @@ function dele(){
 <p id="stitle" >&nbsp;</p></td><td align="left"><input type="image" src="img/21btn.jpg"></td>
 </tr></table>
 <input type="hidden" name="sbox" id="sbox" size="15">
+
+     <?php
+     include_once('keys.php');
+     ?>
     <br> <div class="places">
      <h3>
          <label><input type="radio" VALUE="video/films" name="style" checked="checked">Фильм</label>&nbsp;
          <label><input type="radio" VALUE="video/serials" name="style">Сериал</label>&nbsp;
          <label><input type="radio" VALUE="video/cartoons" name="style">Мультик</label>&nbsp;
-         <label><input type="radio" VALUE="video/cartoonserial" name="style">Мультсериал</label>&nbsp;
+         <label><input type="radio" VALUE="video/cartoonserials" name="style">Мультсериал</label>&nbsp;
          <label><input type="radio" VALUE="video/concerts" name="style">Концерт</label>&nbsp;
          <label><input type="radio" VALUE="albums" name="style">Альбом</label>&nbsp;
          <label><input type="radio" VALUE="soundtracks" name="style">OST</label>
@@ -124,9 +128,6 @@ function dele(){
      </div>
      <br>
 </form>
- <?php
- include_once('keys.php');
-?>
 </center>
 
 <?php
