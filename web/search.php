@@ -35,6 +35,8 @@ $focus=explode("/",$category);
 $focus= ($focus[2]) ? $focus[2]: "albums";
 if($dl) $focus="play";
 if($mode=="downloads") $focus="dls";
+
+$s_value = isset($_GET['sbox']) ? $_GET['sbox'] : '';
 ?>
 <html>
  <head>
@@ -108,9 +110,9 @@ function dele(){
 
 <table width="400px;" cellspacing="0" cellpadding="0" border="0"><tr>
 <td width="277px" background="img/25search.jpg" style="background-repeat:no-repeat;">
-<p id="stitle" >&nbsp;</p></td><td align="left"><input type="image" src="img/21btn.jpg"></td>
+<p id="stitle" >&nbsp;<?php echo $s_value;?></p></td><td align="left"><input type="image" src="img/21btn.jpg"></td>
 </tr></table>
-<input type="hidden" name="sbox" id="sbox" size="15">
+<input type="hidden" name="sbox" id="sbox" size="15" value="<?php echo $s_value;?>">
 
      <?php
      include_once('keys.php');
@@ -122,6 +124,7 @@ function dele(){
          <label><input type="radio" VALUE="video/cartoons" name="style">Мультик</label>&nbsp;
          <label><input type="radio" VALUE="video/cartoonserials" name="style">Мультсериал</label>&nbsp;
          <label><input type="radio" VALUE="video/concerts" name="style">Концерт</label>&nbsp;
+         <label><input type="radio" VALUE="video/tvshow" name="style">TV</label>&nbsp;
          <label><input type="radio" VALUE="albums" name="style">Альбом</label>&nbsp;
          <label><input type="radio" VALUE="soundtracks" name="style">OST</label>
          </h3>
@@ -138,17 +141,6 @@ if(isset($_REQUEST['sbox'])){
     search($sbox, $style);
 }
 
-///poster
-function getposter($id){
-    global $context;
-  $req = $id;
-    $url='http://fs.ua/item/'.$req;
-    $html = file_get_contents($url, false, $context);
-    $arr = Array();
-    preg_match_all('/<h1>.+?<\/b>(.+?)<\/h1>.+?images-show.+?>(.+?cover.+?)<\/a/ism',$html,$arr);
-return Array('name' => $arr[1][0], 'img' => $arr[2][0]);
-}
-
 
 ///////////  search
 /////////////////////////////////////////
@@ -156,7 +148,7 @@ return Array('name' => $arr[1][0], 'img' => $arr[2][0]);
 function search($word, $style){
 	global $opts;
 	$context = stream_context_create($opts);
-    $url='http://fs.ua/'.$style.'/search.aspx?search='.$word;
+    $url='http://fs.to/'.$style.'/search.aspx?search='.$word;
 	$html = file_get_contents($url, false, $context);
 
      echo "<br><center><h3><i >Вы искали:&nbsp;".$word."</i></h3></center>";

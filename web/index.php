@@ -154,7 +154,7 @@ if ($mode == 'favor'){
     );
 
     $context  = stream_context_create($opts);
-    $result = file_get_contents('http://fs.ua/login.aspx', false, $context);
+    $result = file_get_contents('http://fs.to/login.aspx', false, $context);
     $coo = Array();
     foreach( $http_response_header as $head){
         if(stristr($head, 'Set-Cookie:' )) $coo[] = (str_ireplace('Set-Cookie:', '', $head ));
@@ -279,7 +279,7 @@ if(isset($selectLangFolder)){
 //// содержимое категории
 if (isset($category)){
     $currentpage = ($_GET['page']) ? '&page='.$_GET['page'] : '';
-    $html = file_get_contents('http://fs.ua'.$category.$currentpage, false, $context);
+    $html = file_get_contents('http://fs.to'.$category.$currentpage, false, $context);
     $saw = new nokogiri($html);
     $u=$saw->get('a.subject-link')->toArray();
     $pager=$saw->get('div.b-pager')->toArray();
@@ -417,7 +417,7 @@ function search($id){
 //	'/audio/collections/i','/audio/soundtracks/i','/video/concerts/i');
     foreach($types as $type){
         $get="";
-        $url='http://fs.ua'.$type.$id;
+        $url='http://fs.to'.$type.$id;
         $html = file_get_contents($url);//, false, $context);
         $saw = new nokogiri($html);
         $u=$saw->get('a.b-files-folders-link')->toArray();
@@ -426,7 +426,7 @@ function search($id){
     }
 
     echo "<br><center><h3><i >Вы искали:&nbsp;".$id."</i></h3></center>";
-    $url='http://fs.ua/search.aspx?search='.$id;
+    $url='http://fs.to/search.aspx?search='.$id;
     //echo $url;
     $html = file_get_contents($url);//, false, $context);
     $saw = new nokogiri($html);
