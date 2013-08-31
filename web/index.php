@@ -187,13 +187,17 @@ if ($mode == 'favor'){
         $category_id = $arrHead[2][0];
         echo "<h2>".$arrHead[4][0]."</h2>";
         $is_serial = stristr($category_id, "seri") || stristr($category_id, "tvshows") ? true :false;
-        preg_match_all('/item\/(.+?)"(.+?)b-poster-thin(.+?)<span>(.+?)<p/ism',$razdel,$arrR);
+       // preg_match_all('/item\/(.+?)"(.+?)b-poster-thin(.+?)<span>(.+?)<p/ism',$razdel,$arrR);
+        preg_match_all('/href="\/(.+?)".+?b-poster-thin.*?\<span>(.+?)<\/span/ism',$razdel,$arrR);
+      //  echo "<pre>";print_R($arrR);
         echo "<ol>";
         foreach( $arrR[1] as $key => $id){
             $name = $arrR[4][$key];
+            $name = $arrR[2][$key];
             $serial_mode = '&cat0='.$category_id;
             echo "<li>";
-            echo "<a href='?fitem=/item/".$id.$serial_mode."'>".$name."</a>";
+           // echo "<a href='?fitem=/item/".$id.$serial_mode."'>".$name."</a>";
+            echo "<a href='?fitem=/".$id.$serial_mode."'>".str_ireplace(array('<p>', '</p>'), array(' '), $name)."</a>";
             echo "</li>";
         }
 
