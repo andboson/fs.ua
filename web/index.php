@@ -1,7 +1,20 @@
 <?php
 ini_set('max_execution_time', '0');
 error_reporting(0);
-$ini = parse_ini_file("config.ini");
+if( file_exists('config2.ini')){
+    $ini = parse_ini_file("config2.ini");
+} else {
+    $ini = parse_ini_file("config.ini");
+}
+
+
+if( is_array($ini['login'])){
+    $login = $ini['login'][$ini['use_login']];
+    $password = $ini['password'][$ini['use_login']];
+} else {
+    $login = $ini['login'];
+    $password = $ini['password'];
+}
 
 $opts = array(
     'http'=>array(
@@ -54,6 +67,7 @@ if($mode=="downloads") $focus="dls";
         td a {width:28px;height:26px;text-align:center;}
         td {color:<?php echo $ini['text'];?>;}
         #stitle{padding:10px;font-size:20px;font-weight:bold;color:#000}
+        a.conf{ font-size: 14px; color:<?php echo $ini['text'] ?>; }
     </style>
     <script type="text/javascript">
         //  document.write(location.hash);
@@ -104,14 +118,14 @@ if($mode=="downloads") $focus="dls";
     <div id="sdiv"><a href="search.php"><img src="img/21btn.jpg"></a></div>
 
 </center>
-
 <div style="padding:35px 60px;">
-    <?php if(isset($ini['login'])) { ?>
+    <?php if(isset($ini['login']) || isset($ini['login'][0])) { ?>
         <h5><img src="img/favor.png" style="vertical-align:middle">
             <a href="?mode=favor">Избранное</a>&nbsp;
             <a href="?mode=favor&f_page=inprocess">В процессе</a>&nbsp;
-            <a href="?mode=favor&f_page=recommended">Рекомендуемое</a>&nbsp;
-            <a href="?mode=favor&f_page=forlater">На будущее</a>
+            <a href="?mode=favor&f_page=irecommended">Рекомендую</a>&nbsp;
+            <a href="?mode=favor&f_page=forlater">На будущее</a>&nbsp;&nbsp;
+            <?php if( isset($login) ) {?><a class="conf" href="config.php">[<?php echo $login ?>]</a><?php } ?>
         </h5>
     <?php } ?>
     <div class="b-subcategories">
@@ -137,8 +151,8 @@ if ($mode == 'favor'){
 
     $postdata = http_build_query(
         array(
-            'login' => $ini['login'],
-            'passwd' => $ini['password']
+            'login' => $login,
+            'passwd' => $password
         )
     );
 
@@ -154,7 +168,7 @@ if ($mode == 'favor'){
     );
 
     $context  = stream_context_create($opts);
-    $result = file_get_contents('http://fs.to/login.aspx', false, $context);
+    $result = file_get_contents('http://'.$ini['url'].'/login.aspx', false, $context);
     $coo = Array();
     foreach( $http_response_header as $head){
         if(stristr($head, 'Set-Cookie:' )) $coo[] = (str_ireplace('Set-Cookie:', '', $head ));
@@ -174,7 +188,7 @@ if ($mode == 'favor'){
     );
 
     $context  = stream_context_create($opts);
-    $result = file_get_contents('http://fs.to/myfavourites.aspx?page='.$f_page, false, $context);
+    $result = file_get_contents('http://'.$ini['url'].'/myfavourites.aspx?page='.$f_page, false, $context);
     /// разделы
     $arr = Array();
     preg_match_all('/b-category(.+?)m-in-load/ism',$result,$arr);
@@ -283,7 +297,7 @@ if(isset($selectLangFolder)){
 //// содержимое категории
 if (isset($category)){
     $currentpage = ($_GET['page']) ? '&page='.$_GET['page'] : '';
-    $html = file_get_contents('http://fs.to'.$category.$currentpage, false, $context);
+    $html = file_get_contents('http://'.$ini['url'].''.$category.$currentpage, false, $context);
     $saw = new nokogiri($html);
     $u=$saw->get('a.subject-link')->toArray();
     $pager=$saw->get('div.b-pager')->toArray();
@@ -297,25 +311,36 @@ if (isset($category)){
 }
 
 function pages($pager){
+
+    $pager = str_ireplace('страница', '', $pager);
     echo "<br><center>";
     $pagelist=$pager[0]['div']['ul']['li'];
-    foreach($pagelist as $page){     /// echo pages
+    foreach($pagelist as $key => $page){     /// echo pages
         $b1=""; $b2="";
         if($page['a']['class']=='selected') { $b1="<b>["; $b2="]</b>"; }
         $text = ($page['a']["#text"]) ? $page['a']["#text"] : $page['a']['b'][0]["#text"];
+
+        if( !is_numeric($text)){
+            $text = $key == 0 ? '<<' : '>>';
+        }
         echo $b1.'&nbsp;<a href="?cat='.$page['a']["href"].'">'.$text.'</a>&nbsp;'.$b2;
     }
+    echo '<form action="" method="GET" style="display:inline;">
+    <input type="hidden" value="'. htmlentities( $_GET['cat'] ).'" name="cat">
+    <input type="text" value="" name="page" size="2" style="width:30px;">
+    <input type="submit" value=">>">
+    </form>';
     echo "</center>";
 }
 
 /// папка сезонов сериала
 function getserial($id){
     //$id = substr($id,stripos($id,'/',1) + 1);
-    global $opts, $r, $category0;
+    global $opts, $r, $category0, $ini;
     $context = stream_context_create($opts);
     $folder = 0;
     $req = $id.'?ajax&r='.$r.'&id='.$id.'&folder='.$folder;
-    $url='http://fs.to/'.$req;
+    $url='http://'.$ini['url'].'/'.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
     preg_match_all('/fl(\d+)(.+?)\<b\>(.+?)\<\/b\>/ism',$html,$arr);
@@ -338,10 +363,9 @@ function getserial($id){
 
 ///// содержимое папки сезона
 function getSeasonFolder($item, $r, $id, $folder){
-    global $context, $category0;
+    global $context, $category0, $ini;
     $req = $id.'?ajax&r='.$r.'&id='.$id.'&folder='.$folder;
-    $url='http://fs.to/'.$req;
-
+    $url='http://'.$ini['url'].'/'.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
     preg_match_all('/ name="fl(\d+)".+?link-subtype(.+?)title.+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
@@ -356,9 +380,13 @@ function getSeasonFolder($item, $r, $id, $folder){
     echo "</td><td valign='top'>";
 
     echo "<ol>";
+
+    preg_match_all('/(\w+?)-/imsU', $id,  $resId);
+    $pureId = $resId[1][0];
+  //  print_r($arr);
     foreach( $arr[1] as $key => $value){
         $name = $arr[3][$key];
-        $plistlink= "http://fs.to/flist/".$id."?folder=".$value;
+        $plistlink= "http://".$ini['url']."/flist/".$pureId."?folder=".$value;
         echo "<li>";
         echo "<a class='file' href='?selectlangfolder=".$id."&folder=".$value."'>";
         echo "<img style='vertical-align:middle;matgin-top:-10px;' src='img/".substr(trim($arr[2][$key]),2).".png'>";
@@ -377,7 +405,7 @@ function getLangFolder($id, $folder){
     preg_match_all('/.*\/(.+?)-/ims', $id, $result);
     $id = $result[1][0];
     $req = $id.'?folder='.$folder;
-    $url='http://fs.to/flist/'.$req;
+    $url='http://'.$ini['url'].'/flist/'.$req;
     $html = file_get_contents($url, false, $context);
     $files = explode("\r\n", $html);
     echo "<br><center><h1>".$resinfo['name']."</h1></center>";
@@ -390,7 +418,7 @@ function getLangFolder($id, $folder){
         $del=$ini['save_dir'].strrchr($onefile,"/");
         $filename = substr($onefile, strripos($onefile, '/') +1 );
         $downornot = (file_exists($ini['save_dir'].strrchr($onefile,"/"))) ? '<a href="?delete='.$del.'&folder='.$filename.'">[удалить]</a>&nbsp;<a vod href="'.$onefile.'">[играть]</a>' : '<a href="?dl='.$onefile.'">[скачать]</a>';
-        echo '<li><a vod href="'.$onefile.'">'.$filename.'</a>&nbsp;&nbsp;&nbsp;'.$downornot.'</li>';
+        echo '<li><a vod href="'.$onefile.'">'.rawurldecode($filename).'</a>&nbsp;&nbsp;&nbsp;'.$downornot.'</li>';
     }
     echo '</ol>';
     echo "</td></tr></table>";
@@ -399,13 +427,17 @@ function getLangFolder($id, $folder){
 
 ///poster
 function getposter($id){
-    global $context;
+    global $context, $ini;
     $req = $id;
-    $url='http://fs.to'.$req;
+    $url='http://'.$ini['url'].''.$req;
     $html = file_get_contents($url, false, $context);
+    $saw = new nokogiri($html);
+    $u=$saw->get('a.images-show')->toArray();
+    $uname=$saw->get('h1')->toArray();
+    $style = ($u[0]['style']);
     $arr = Array();
-    preg_match_all('/<h1>(.+?)\<\/h1>.+?poster-main.+?<img\ssrc=\"(.+?)\"/ims',$html,$arr);
-    return Array('name' => $arr[1][0], 'img' => $arr[2][0]);
+    preg_match_all('/url\((.*?)\);/ims',$style,$arr);
+    return Array('name' => $uname[1]['#text'], 'img' => $arr[1][0]);
 }
 
 
@@ -413,7 +445,7 @@ function getposter($id){
 /////////////////////////////////////////
 
 function search($id){
-    global $opts;
+    global $opts, $ini;
     $context = stream_context_create($opts);
     $path="none";
 
@@ -421,7 +453,7 @@ function search($id){
 //	'/audio/collections/i','/audio/soundtracks/i','/video/concerts/i');
     foreach($types as $type){
         $get="";
-        $url='http://fs.to'.$type.$id;
+        $url='http://'.$ini['url'].''.$type.$id;
         $html = file_get_contents($url);//, false, $context);
         $saw = new nokogiri($html);
         $u=$saw->get('a.b-files-folders-link')->toArray();
@@ -430,7 +462,7 @@ function search($id){
     }
 
     echo "<br><center><h3><i >Вы искали:&nbsp;".$id."</i></h3></center>";
-    $url='http://fs.to/search.aspx?search='.$id;
+    $url='http://'.$ini['url'].'/search.aspx?search='.$id;
     //echo $url;
     $html = file_get_contents($url);//, false, $context);
     $saw = new nokogiri($html);
