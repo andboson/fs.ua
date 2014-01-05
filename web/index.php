@@ -8,12 +8,12 @@ if( file_exists('config2.ini')){
 }
 
 
-if( is_array($ini['login'])){
+if( !isset($ini['use_login'])){
+    $login = $ini['login'][0];
+    $password = $ini['password'][0];
+} else {
     $login = $ini['login'][$ini['use_login']];
     $password = $ini['password'][$ini['use_login']];
-} else {
-    $login = $ini['login'];
-    $password = $ini['password'];
 }
 
 $opts = array(
@@ -302,9 +302,15 @@ if (isset($category)){
     $u=$saw->get('a.subject-link')->toArray();
     $pager=$saw->get('div.b-pager')->toArray();
     pages($pager);
+
+    preg_match_all('/subject-link"\s+?href="(.+?)"\s+?title="(.+?)"/ims', $html, $result);
+   // echo "<pre>";print_r($result);
     echo '<ul>';
-    for ($i=0;$i<count($u);$i++){
-        echo '<li><a href="?fitem='.$u[$i]['href'].'&cat0='.$category.'">'.$u[$i]["span"][0]["#text"].'</a></li>';
+    foreach ($result[1] as $key=>$href){
+        $name = str_ireplace("Смотреть", "", $result[2][$key]);
+        $name = str_ireplace("онлайн", "", $name);
+        //echo '<li><a href="?fitem='.$u[$i]['href'].'&cat0='.$category.'">'.$u[$i]["span"][0]["#text"].'</a></li>';
+        echo '<li><a href="?fitem='.$href.'&cat0='.$category.'">'.$name.'</a></li>';
     }
     echo '</ul>';
     pages($pager);
