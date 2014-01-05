@@ -146,19 +146,17 @@ if(isset($_REQUEST['sbox'])){
 /////////////////////////////////////////
 
 function search($word, $style){
-	global $opts;
+	global $opts, $ini;
 	$context = stream_context_create($opts);
-    $url='http://fs.to/'.$style.'/search.aspx?search='.$word;
+    $url='http://'.$ini['url'].'/'.$style.'/search.aspx?search='.$word;
 	$html = file_get_contents($url, false, $context);
+    preg_match_all('/"image-wrap">\s+?<a\s+?href="(.+?)"\s+?title="(.+?)"/ims', $html, $result);
 
      echo "<br><center><h3><i >Вы искали:&nbsp;".$word."</i></h3></center>";
-		$saw = new nokogiri($html);
-        $u=$saw->get('table')->toArray();
     echo "<center>";
     echo '<ol>';
-foreach( $u[0]['tr'] as $row){
-    $item = count($row['td']) > 0 ? $row['td'][2]['a'][0] : $row[2]['a'][0];
-        echo '<li><a href="index.php?fitem='.$item['href'].'&cat0='.$style.'">'.$item["#text"].'</a><hr></li>';
+foreach( $result[1] as $key => $row){
+        echo '<li><a href="index.php?fitem='.$row.'&cat0='.$style.'">'.$result[2][$key].'</a><hr></li>';
 }
     echo '</ol>';
     echo "</center>";

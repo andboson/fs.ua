@@ -444,39 +444,6 @@ function getposter($id){
 ///////////  search
 /////////////////////////////////////////
 
-function search($id){
-    global $opts, $ini;
-    $context = stream_context_create($opts);
-    $path="none";
-
-    $types=Array('/video/');//,'/video/serials/i','/video/cartoonserials/i','/video/tvshow/i','/video/clips/i','/audio/albums/i',
-//	'/audio/collections/i','/audio/soundtracks/i','/video/concerts/i');
-    foreach($types as $type){
-        $get="";
-        $url='http://'.$ini['url'].''.$type.$id;
-        $html = file_get_contents($url);//, false, $context);
-        $saw = new nokogiri($html);
-        $u=$saw->get('a.b-files-folders-link')->toArray();
-        $path = substr($u['href'],0,strpos($u['href'],"/i"));
-        $path = $path."/i";
-    }
-
-    echo "<br><center><h3><i >Вы искали:&nbsp;".$id."</i></h3></center>";
-    $url='http://'.$ini['url'].'/search.aspx?search='.$id;
-    //echo $url;
-    $html = file_get_contents($url);//, false, $context);
-    $saw = new nokogiri($html);
-    $u=$saw->get('a.title')->toArray();
-    $type=$saw->get('span.section')->toArray();
-    echo "<center><table >";
-    for($i=0;$i<count($u);$i++){
-        echo  '<tr><td ><i>'.$type[$i]["#text"].'</i><hr></td><td><a  href="?fitem='.$u[$i]["href"].'">'.$u[$i]["#text"].'</a><hr></td></tr>';
-    }
-    echo "</table></center>";
-
-
-}
-
 ////////////////  текущие и законченные закачки
 /////////////////////////////////////////////////
 function downloadlist(){
