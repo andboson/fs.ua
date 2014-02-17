@@ -178,7 +178,7 @@ if ($mode == 'favor'){
     $opts = array(
         'http'=>array(
             'method'=>"POST",
-            'header'=>"Content-type: application/x-www-form-urlencoded\r\n User-Agent : Opera/9.80 (X11; Linux i686; U; ru) Presto/2.7.62 Version/11.00 \r\n".
+            'header'=>"Content-type: application/x-www-form-urlencoded\r\n User-Agent : Opera/10.80 (X11; Linux i686; U; ru) Presto/2.7.62 Version/11.00 \r\n".
             "Accept-Language: ru-RU,ru;q=0.9,en;q=0.8 \r\n".
             "Accept-Charset:utf-8, utf-16, *;q=0.1 \r\n".
             "Accept-Encoding:identity, *;q=0 \r\n".
@@ -297,39 +297,49 @@ if(isset($selectLangFolder)){
 //// содержимое категории
 if (isset($category)){
     $currentpage = ($_GET['page']) ? '&page='.$_GET['page'] : '';
-    $html = file_get_contents('http://'.$ini['url'].''.$category.$currentpage, false, $context);
-    $saw = new nokogiri($html);
-    $u=$saw->get('a.subject-link')->toArray();
-    $pager=$saw->get('div.b-pager')->toArray();
-    pages($pager);
 
-    preg_match_all('/subject-link"\s+?href="(.+?)"\s+?title="(.+?)"/ims', $html, $result);
-   // echo "<pre>";print_r($result);
+    if(!isset($_GET['page'])){
+        $html = file_get_contents('http://'.$ini['url'].''.$category.$currentpage, false, $context);
+    } else {
+        $perpage = 15;
+        $start = $_GET['page'] * $perpage;
+        $html = file_get_contents('http://'.$ini['url'].''.$category.'&scrollload=1&view=list&start='.$start.'&length='.$perpage.'&_='.$currentpage, false, $context);
+        $html = stripcslashes($html);
+    }
+
+    pages();
+
+    preg_match_all('/subject-link"\s+?href="(.+?)"\s+?title="(.+?)"\>.+?<img.+?src="(.+?)"/ims', $html, $result);
     echo '<ul>';
     foreach ($result[1] as $key=>$href){
         $name = str_ireplace("Смотреть", "", $result[2][$key]);
         $name = str_ireplace("онлайн", "", $name);
-        //echo '<li><a href="?fitem='.$u[$i]['href'].'&cat0='.$category.'">'.$u[$i]["span"][0]["#text"].'</a></li>';
-        echo '<li><a href="?fitem='.$href.'&cat0='.$category.'">'.$name.'</a></li>';
+        echo '<li><a href="?fitem='.$href.'&cat0='.$category.'">'
+       // .'<img src="'.$result[3][$key]. '"><br>'
+        .$name.'</a></li>';
     }
     echo '</ul>';
-    pages($pager);
+    pages();
 }
 
-function pages($pager){
+function pages(){
+ echo "<center>";
+   $currPage = isset($_GET['page']) ? $_GET['page'] : 0;
 
-    $pager = str_ireplace('страница', '', $pager);
-    echo "<br><center>";
-    $pagelist=$pager[0]['div']['ul']['li'];
-    foreach($pagelist as $key => $page){     /// echo pages
-        $b1=""; $b2="";
-        if($page['a']['class']=='selected') { $b1="<b>["; $b2="]</b>"; }
-        $text = ($page['a']["#text"]) ? $page['a']["#text"] : $page['a']['b'][0]["#text"];
+    for($i = -5; $i<6; $i++){
+        $pageItem = $currPage + $i;
+        if( $pageItem < 0 ) continue;
 
-        if( !is_numeric($text)){
-            $text = $key == 0 ? '<<' : '>>';
-        }
-        echo $b1.'&nbsp;<a href="?cat='.$page['a']["href"].'">'.$text.'</a>&nbsp;'.$b2;
+       $pageStr = $_SERVER['HTTP_HOST'] . preg_replace('/page=(\d+)/i', 'page=' . $pageItem, $_SERVER['REQUEST_URI']);
+       if( !isset($_GET['page'])){
+           $pageStr = $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'] . '&page=' . $pageItem;
+       }
+
+        if($i==0){
+           echo '&nbsp;<big><big>['. ($currPage + 1) .']</big></big>&nbsp;';
+       } else{
+           echo '&nbsp;<a href="http://'.$pageStr.'">'.($pageItem+1).'</a>&nbsp;';
+       }
     }
     echo '<form action="" method="GET" style="display:inline;">
     <input type="hidden" value="'. htmlentities( $_GET['cat'] ).'" name="cat">
@@ -434,16 +444,17 @@ function getLangFolder($id, $folder){
 ///poster
 function getposter($id){
     global $context, $ini;
+    global $context, $ini;
     $req = $id;
     $url='http://'.$ini['url'].''.$req;
     $html = file_get_contents($url, false, $context);
-    $saw = new nokogiri($html);
-    $u=$saw->get('a.images-show')->toArray();
-    $uname=$saw->get('h1')->toArray();
-    $style = ($u[0]['style']);
     $arr = Array();
-    preg_match_all('/url\((.*?)\);/ims',$style,$arr);
-    return Array('name' => $uname[1]['#text'], 'img' => $arr[1][0]);
+    preg_match_all('/itemprop="name">(.+?)<\/span>/imsu',$html, $arr);
+    $name = $arr[1][0];
+    preg_match_all('/poster-main .+?img.+?src="(.+?)"/ims',$html, $arr);
+    $imgData = $arr[1][0];
+
+    return Array('name' => $name, 'img' => $imgData);
 }
 
 
