@@ -1,7 +1,7 @@
 {
     appinfo_format = "1",
     name = "FS.UA",
-    version = "0.9.2",
+    version = "0.9.4",
     enabled = "1",
     webui_path = "#PATH#/web",
     gayaui_path = "#PATH#/web" ,
