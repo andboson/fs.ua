@@ -356,7 +356,7 @@ function getserial($id){
     $context = stream_context_create($opts);
     $folder = 0;
     $req = $id.'?ajax&r='.$r.'&id='.$id.'&folder='.$folder;
-    $url='http://'.$ini['url'].'/'.$req;
+    $url='http://'.$ini['url'].''.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
     preg_match_all('/fl(\d+)(.+?)\<b\>(.+?)\<\/b\>/ism',$html,$arr);
@@ -377,11 +377,11 @@ function getserial($id){
 }
 
 
-///// содержимое папки сезона
+///// содержимое папки сезона или фильма
 function getSeasonFolder($item, $r, $id, $folder){
     global $context, $category0, $ini;
     $req = $id.'?ajax&r='.$r.'&id='.$id.'&folder='.$folder;
-    $url='http://'.$ini['url'].'/'.$req;
+    $url='http://'.$ini['url'].''.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
     preg_match_all('/ name="fl(\d+)".+?link-subtype(.+?)title.+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
