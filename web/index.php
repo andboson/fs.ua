@@ -308,14 +308,13 @@ if (isset($category)){
     }
 
     pages();
-
-    preg_match_all('/subject-link"\s+?href="(.+?)"\s+?title="(.+?)"\>.+?<img.+?src="(.+?)"/ims', $html, $result);
+    preg_match_all('/b-poster-tile.+?href=\"(.+?)".+?_title-short">(.+?)</imsxu', $html, $result);
     echo '<ul>';
+
     foreach ($result[1] as $key=>$href){
         $name = str_ireplace("Смотреть", "", $result[2][$key]);
         $name = str_ireplace("онлайн", "", $name);
         echo '<li><a href="?fitem='.$href.'&cat0='.$category.'">'
-       // .'<img src="'.$result[3][$key]. '"><br>'
         .$name.'</a></li>';
     }
     echo '</ul>';
