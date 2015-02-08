@@ -41,6 +41,7 @@ $del=$_GET['delete'];
 $mode=$_GET['mode'];
 $selectSeason = $_GET['selectseason'];
 $selectLangFolder = $_GET['selectlangfolder'];
+$selectQualityFolder = $_GET['selectqualityfolder'];
 $f_page = $_GET['f_page'];
 
 $focus=explode("/",$category);
@@ -293,6 +294,11 @@ if(isset($selectLangFolder)){
     exit();
 }
 
+if(isset($selectQualityFolder)){
+    getQualityFolder($selectQualityFolder, $_GET['folder'], $_GET['quality'] );
+    exit();
+}
+
 
 //// содержимое категории
 if (isset($category)){
@@ -308,7 +314,7 @@ if (isset($category)){
     }
 
     pages();
-    preg_match_all('/b-poster-tile.+?href=\"(.+?)".+?_title-short">(.+?)</imsxu', $html, $result);
+    preg_match_all('/b-poster-tile.+?href=\"(.+?)".+?_title-short">(.+?)</ism', $html, $result);
     echo '<ul>';
 
     foreach ($result[1] as $key=>$href){
@@ -383,7 +389,7 @@ function getSeasonFolder($item, $r, $id, $folder){
     $url='http://'.$ini['url'].''.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
-    preg_match_all('/ name="fl(\d+)".+?link-subtype(.+?)title.+?>(.+?)<\/a>.+?material-size">([\d]+.[\d]+.+?)<.+?material-details">(.+?)</ism',$html,$arr);
+    preg_match_all('/ name="fl(\d+)".+?link-subtype(.+?)title.+?>(.+?)<\/a>/ism',$html,$arr);
     $plisttype='vod="playlist"';
     if(strstr($category0,"aud") || strstr($category0,"sound") || strstr($category0,"album")){
         $plisttype='pod="2,1,http://andboson.net/ex/panda.php?'.time().'"';
@@ -393,12 +399,10 @@ function getSeasonFolder($item, $r, $id, $folder){
     echo "<table cellpadding='10'><tr><td>";
     echo "<img src='".$resinfo['img']."' />";
     echo "</td><td valign='top'>";
-
     echo "<ol>";
 
     preg_match_all('/(\w+?)-/imsU', $id,  $resId);
     $pureId = $resId[1][0];
-  //  print_r($arr);
     foreach( $arr[1] as $key => $value){
         $name = $arr[3][$key];
         $plistlink= "http://".$ini['url']."/flist/".$pureId."?folder=".$value;
@@ -406,34 +410,67 @@ function getSeasonFolder($item, $r, $id, $folder){
         echo "<a class='file' href='?selectlangfolder=".$id."&folder=".$value."'>";
         echo "<img style='vertical-align:middle;matgin-top:-10px;' src='img/".substr(trim($arr[2][$key]),2).".png'>";
         echo " ".$arr[3][$key]." ".$arr[4][$key]." ".$arr[5][$key]."</a>";
-        echo '&nbsp;&nbsp;<a '.$plisttype.' href="playlist.php?list='.$plistlink.'"><small>[играть все]</small></a>';
+        //echo '&nbsp;&nbsp;<a '.$plisttype.' href="playlist.php?list='.$plistlink.'"><small>[играть все]</small></a>';
         echo "</li>";
     }
     echo "</ol>";
     echo "</td></tr></table>";
 }
 
-///содержимое языковой папки
-function getLangFolder($id, $folder){
+///содержимое языковой папки - озвучка
+function getLangFolder($rawid, $folder)
+{
     global $context, $ini;
-    $resinfo = getposter($id);
-    preg_match_all('/.*\/(.+?)-/ims', $id, $result);
+    $resinfo = getposter($rawid);
+    preg_match_all('/.*\/(.+?)-/ims', $rawid, $result);
     $id = $result[1][0];
-    $req = $id.'?folder='.$folder;
-    $url='http://'.$ini['url'].'/flist/'.$req;
+    $req = $id . '?folder=' . $folder;
+    $url = 'http://' . $ini['url'] . '/' . $id . '?ajax&folder=' . $folder;
     $html = file_get_contents($url, false, $context);
-    $files = explode("\r\n", $html);
+    preg_match_all('/parent_id:\s\'(.+?)\'.+?quality_list:\s\'(.+)\'.+?>(.+?)<\/a/i',$html,$arr);
+
     echo "<br><center><h1>".$resinfo['name']."</h1></center>";
     echo "<table cellpadding='10'><tr><td valign='top'>";
     echo "<img src='". $resinfo['img'] . "' >";
     echo "</td><td valign='top'>";
     echo '<ol>';
-    foreach($files as $onefile){
+    foreach($arr[3] as $key => $dubleName){
+        echo "<li>$dubleName";
+        $folder = $arr[1][$key];
+        $qualityList = explode(',', $arr[2][$key]);
+        foreach($qualityList as $quality){
+            echo "<a href='?selectqualityfolder=$rawid&folder=$folder&quality=$quality'>&nbsp;[$quality]</a>";
+        }
+        echo "</li>";    }
+    echo '</ol>';
+    echo "</td></tr></table>";
+}
+
+
+function getQualityFolder($id, $folder, $quality){
+    global $context, $ini;
+    $resinfo = getposter($id);
+    preg_match_all('/.*\/(.+?)-/ims', $id, $result); $id = $result[1][0];
+    $req = $id.'?folder='.$folder;
+    $url = 'http://'.$ini['url']. '/' . $id . '?ajax&folder=' . $folder;
+    $html = file_get_contents($url, false, $context);
+    preg_match_all('/quality-flag-.+?>(.+?)<\/.+?link-material-filename-text".+?>(.+?)<\/span.+?href="(.+?)\".+?link-material-size.=?>(.+?)</is', $html, $result);
+    echo "<br><center><h1>".$resinfo['name']."</h1></center>";
+    echo "<table cellpadding='10'><tr><td valign='top'>";
+    echo "<img src='". $resinfo['img'] . "' >";
+    echo "</td><td valign='top'>";
+    echo '<ol>';
+    foreach($result[2] as $key =>  $onefile){
+        $qualityFile = $result[1][$key];
+        $urlFile = $result[3][$key];
+        $sizeString =  $result[4][$key];
+        if(!strstr($qualityFile, $quality)) continue;
         if( strlen($onefile) < 20 ) continue;
         $del=$ini['save_dir'].strrchr($onefile,"/");
-        $filename = substr($onefile, strripos($onefile, '/') +1 );
-        $downornot = (file_exists($ini['save_dir'].strrchr($onefile,"/"))) ? '<a href="?delete='.$del.'&folder='.$filename.'">[удалить]</a>&nbsp;<a vod href="'.$onefile.'">[играть]</a>' : '<a href="?dl='.$onefile.'">[скачать]</a>';
-        echo '<li><a vod href="'.$onefile.'">'.rawurldecode($filename).'</a>&nbsp;&nbsp;&nbsp;'.$downornot.'</li>';
+        $url = 'http://' . $ini['url'] . '' . $urlFile;
+        $filename = $onefile;
+        $downornot = (file_exists($ini['save_dir'].strrchr($onefile,"/"))) ? '<a href="?delete='.$del.'&folder='.$filename.'">[удалить]</a>&nbsp;<a vod href="'.$onefile.'">[играть]</a>' : '<a href="?dl='.$url.'">[скачать]</a>';
+        echo '<li><a vod href="'.$url.'">'.rawurldecode($filename) . " " .$sizeString .'</a>&nbsp;&nbsp;&nbsp;'.$downornot.'</li>';
     }
     echo '</ol>';
     echo "</td></tr></table>";
@@ -448,7 +485,7 @@ function getposter($id){
     $url='http://'.$ini['url'].''.$req;
     $html = file_get_contents($url, false, $context);
     $arr = Array();
-    preg_match_all('/itemprop="name">(.+?)<\/span>/imsu',$html, $arr);
+    preg_match_all('/itemprop="name">(.+?)<\/span>/ims',$html, $arr);
     $name = $arr[1][0];
     preg_match_all('/poster-main .+?img.+?src="(.+?)"/ims',$html, $arr);
     $imgData = $arr[1][0];
