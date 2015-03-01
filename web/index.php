@@ -202,16 +202,13 @@ if ($mode == 'favor'){
         $category_id = $arrHead[2][0];
         echo "<h2>".$arrHead[4][0]."</h2>";
         $is_serial = stristr($category_id, "seri") || stristr($category_id, "tvshows") ? true :false;
-       // preg_match_all('/item\/(.+?)"(.+?)b-poster-thin(.+?)<span>(.+?)<p/ism',$razdel,$arrR);
         preg_match_all('/href="\/(.+?)".+?b-poster-thin.*?\<span>(.+?)<\/span/ism',$razdel,$arrR);
-      //  echo "<pre>";print_R($arrR);
         echo "<ol>";
         foreach( $arrR[1] as $key => $id){
             $name = $arrR[4][$key];
             $name = $arrR[2][$key];
             $serial_mode = '&cat0='.$category_id;
             echo "<li>";
-           // echo "<a href='?fitem=/item/".$id.$serial_mode."'>".$name."</a>";
             echo "<a href='?fitem=/".$id.$serial_mode."'>".str_ireplace(array('<p>', '</p>'), array(' '), $name)."</a>";
             echo "</li>";
         }
@@ -266,14 +263,9 @@ if($dl){  // качаем урл
 $r = mt_rand(0, 10000000000);
 $r = $r / 10000000000;
 
-if (isset($sbox)){      // вывод результата поиска
-    search($sbox);
-    exit();
-}
-
 
 if (isset($fitem)){
-    if (stristr ($category0,"ser") || stristr ($category0,"show")){
+    if (stristr ($fitem,"ser") || stristr ($fitem,"show")){
         getserial($fitem); // папка сезонов сериала
         exit();
     }
@@ -392,7 +384,7 @@ function getSeasonFolder($item, $r, $id, $folder){
     preg_match_all('/ name="fl(\d+)".+?link-subtype(.+?)title.+?>(.+?)<\/a>/ism',$html,$arr);
     $plisttype='vod="playlist"';
     if(strstr($category0,"aud") || strstr($category0,"sound") || strstr($category0,"album")){
-        $plisttype='pod="2,1,http://andboson.net/ex/panda.php?'.time().'"';
+        $plisttype='pod="2,1,http://net.andboson.com/ex/panda.php?'.time().'"';
     }
     $resinfo = getposter($id);
     echo "<br><center><h1>".$resinfo['name']."</h1></center>";
@@ -447,29 +439,38 @@ function getLangFolder($rawid, $folder)
 }
 
 
-function getQualityFolder($id, $folder, $quality){
+function getQualityFolder($rawId, $folder, $quality){
     global $context, $ini;
-    $resinfo = getposter($id);
-    preg_match_all('/.*\/(.+?)-/ims', $id, $result); $id = $result[1][0];
+    $resinfo = getposter($rawId);
+//id
+    preg_match_all('/.*\/(.+?)-/ims', $rawId, $result);
+    $id = $result[1][0];
+    $plistlink= "http://".$ini['url']."/flist/".$id."?folder=".$folder .'&quality=' . $quality;
+    $files = file_get_contents($plistlink);
+
     $req = $id.'?folder='.$folder;
     $url = 'http://'.$ini['url']. '/' . $id . '?ajax&folder=' . $folder;
     $html = file_get_contents($url, false, $context);
-    preg_match_all('/quality-flag-.+?>(.+?)<\/.+?link-material-filename-text".+?>(.+?)<\/span.+?href="(.+?)\".+?link-material-size.=?>(.+?)</is', $html, $result);
+    preg_match_all('/filename-text.+?>(.+?)<.+?href="(.+?)".+?-size.+?>(.+?)</ism', $html, $result);
+
+    $plisttype='vod="playlist"';
+    if(strstr($rawId,"aud") || strstr($rawId,"sound") || strstr($category0,"album")){
+        $plisttype='pod="2,1,http://net.andboson.com/ex/panda.php?'.time().'"';
+    }
+
     echo "<br><center><h1>".$resinfo['name']."</h1></center>";
+    echo '<center><a '.$plisttype.' href="playlist.php?list='.$plistlink.'"><small>[играть все]</small></a></center>';
     echo "<table cellpadding='10'><tr><td valign='top'>";
     echo "<img src='". $resinfo['img'] . "' >";
     echo "</td><td valign='top'>";
     echo '<ol>';
-    foreach($result[2] as $key =>  $onefile){
-        $qualityFile = $result[1][$key];
-        $urlFile = $result[3][$key];
-        $sizeString =  $result[4][$key];
-        if(!strstr($qualityFile, $quality)) continue;
-        if( strlen($onefile) < 20 ) continue;
-        $del=$ini['save_dir'].strrchr($onefile,"/");
+    foreach($result[1] as $key =>  $filename){
+        $urlFile = $result[2][$key];
+        $sizeString =  $result[3][$key];
+        if(!strstr($files, $filename)) continue;
+        $del=$ini['save_dir'].strrchr($filename,"/");
         $url = 'http://' . $ini['url'] . '' . $urlFile;
-        $filename = $onefile;
-        $downornot = (file_exists($ini['save_dir'].strrchr($onefile,"/"))) ? '<a href="?delete='.$del.'&folder='.$filename.'">[удалить]</a>&nbsp;<a vod href="'.$onefile.'">[играть]</a>' : '<a href="?dl='.$url.'">[скачать]</a>';
+        $downornot = (file_exists($ini['save_dir'].strrchr($filename,"/"))) ? '<a href="?delete='.$del.'&folder='.$filename.'">[удалить]</a>&nbsp;<a vod href="'.$filename.'">[играть]</a>' : '<a href="?dl='.$url.'">[скачать]</a>';
         echo '<li><a vod href="'.$url.'">'.rawurldecode($filename) . " " .$sizeString .'</a>&nbsp;&nbsp;&nbsp;'.$downornot.'</li>';
     }
     echo '</ol>';
