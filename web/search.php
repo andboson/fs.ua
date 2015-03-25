@@ -218,21 +218,32 @@ function search($word, $style)
     global $opts, $ini;
     $context = stream_context_create($opts);
     $url = 'http://' . $ini['url'] . '/search.aspx?search=' . $word;
-    echo $url;
-    $html = file_get_contents($url, false, $context);
+    $url;
+     $html = file_get_contents($url, false, $context);
     //title
-    preg_match_all('/b-search-page__results-item-title">(.+?)</imsu', $html, $titles);
+    preg_match_all('/b-search-page__results-item-title">(.+?)</ims', $html, $titles);
     //type
-    preg_match_all('/b-search-page__results-item-subsection">(.+?)</imsu', $html, $types);
+    preg_match_all('/b-search-page__results-item-subsection">(.+?)</ims', $html, $types);
     //link
-    preg_match_all('/b-search-page__results-item.+?m-(.+?)".+?href="(.+?)"/imsu', $html, $links);
+    preg_match_all('/b-search-page__results-item\sm-(.+?)".+?data-subsection="(.+?)"\shref="(.+?)"/isx', $html, $links);
+    preg_match_all('/b-search-page.+?\s?m-(\w+)".+?href="(.+?)"/is', $html, $links);
+
+
+    $linksItems = array();
+    foreach($links[2] as $item){
+       if(!stristr($item, 'search.')){
+           $linksItems[] = $item;
+       }
+    }
+   // echo "<pre>";    print_r($linksItems);
 
     echo "<br><center><h3><i >Вы искали:&nbsp;" . $word . "</i></h3></center>";
     echo "<center>";
     echo '<ol>';
     foreach ($titles[1] as $key => $row) {
-        if (!stristr($style, $links[1][$key])) continue;
-        echo '<li><a href="index.php?fitem=' . $links[2][$key - 1] . '&cat0=' . $style . '">' . $row . '</a>&nbsp;<small>' . $types[1][$key] . '</small><hr>
+
+        //if (!stristr($style, $links[1][$key])) continue;
+        echo '<li><a href="index.php?fitem=' . $linksItems[$key] . '&cat0=' . $style . '">' . $row . '</a>&nbsp;<small>' . $types[1][$key] . '</small><hr>
         </li>';
     }
     echo '</ol>';
