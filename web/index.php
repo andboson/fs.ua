@@ -398,9 +398,10 @@ function getSeasonFolder($item, $r, $id, $folder){
     foreach( $arr[1] as $key => $value){
         $name = $arr[3][$key];
         $plistlink= "http://".$ini['url']."/flist/".$pureId."?folder=".$value;
+        $flag = strlen(substr(trim($arr[2][$key]),2)) ? substr(trim($arr[2][$key]),2) : 'earth';
         echo "<li>";
         echo "<a class='file' href='?selectlangfolder=".$id."&folder=".$value."'>";
-        echo "<img style='vertical-align:middle;matgin-top:-10px;' src='img/".substr(trim($arr[2][$key]),2).".png'>";
+        echo "<img style='vertical-align:middle;matgin-top:-10px;' src='img/".$flag.".png'>";
         echo " ".$arr[3][$key]." ".$arr[4][$key]." ".$arr[5][$key]."</a>";
         //echo '&nbsp;&nbsp;<a '.$plisttype.' href="playlist.php?list='.$plistlink.'"><small>[играть все]</small></a>';
         echo "</li>";
